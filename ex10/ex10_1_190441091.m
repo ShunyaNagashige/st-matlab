@@ -14,25 +14,32 @@ function ex10_1()
     % シミュレーションパラメータ
     
     % 8桁なら12[dB]まで0にならない
-    nDataBits = 1000000; % 全送信ビット数[bit]
+    nDataBits = 10000000; % 全送信ビット数[bit]
     %EbN0_dB = 0; % Eb/N0[dB]
     %%%%%%%%%%%%%%%%
 
     %%%%%%%%%%%%%%%%%%%%
     % シミュレーション部
     
-    max_dB = 14;
-    EbN0_dB_range = 0:max_dB;
-    qpsk_ber = zeros(1, max_dB + 1);
-    qpsk_ser = zeros(1, max_dB + 1);
+    EbN0_dB_range = 0:0;
+    qpsk_ber = zeros(1, length(EbN0_dB_range));
+    qpsk_ser = zeros(1, length(EbN0_dB_range));
     qpsk_ber_theory = zeros(1, length(EbN0_dB_range));
     
-    for k=EbN0_dB_range
+    index = 1;
+    for EbN0_dB=EbN0_dB_range
         % シミュレーション実行
-        [qpsk_ber(k+1), qpsk_ser(k+1)] = sim_QPSK(nDataBits, k);
+        [qpsk_ber(index), qpsk_ser(index)] = sim_QPSK(nDataBits, EbN0_dB);
 
+        % dBから真値に換算
+        EbN0_tv = 10 ^ (EbN0_dB/10);
+        % 理論BERを算出
+        qpsk_ber_theory(index) = theoretical_ber_qpsk(EbN0_tv); % qpsk
+        
         % 結果の表示
-        disp(['Simulated BER = ' num2str(qpsk_ber(k+1)) ', SER = ' num2str(qpsk_ser(k+1)) ' in Eb/N0 = ' num2str(k) '[dB]']); 
+        disp(['Simulated BER = ' num2str(qpsk_ber(EbN0_dB+1)) ', SER = ' num2str(qpsk_ser(EbN0_dB+1)) ' in Eb/N0 = ' num2str(EbN0_dB) '[dB]']);
+        
+        index = index + 1;
     end
     
     % ここまで
@@ -43,18 +50,21 @@ function ex10_1()
     
     figure(1);
     semilogy(EbN0_dB_range, qpsk_ber, 'b-', 'linewidth', 2);
+    hold on;
+    semilogy(EbN0_dB_range, qpsk_ber_theory, 'ro-', 'linewidth', 2);
+    hold off;
     % 以下，plotを見やすくするための細かい設定
     set(gca, 'FontName', font_name); % フォントの種類を指定
     set(gca, 'FontSize', font_size); % フォントの大きさを指定
-    set(gca,'XTick', 0:2:16); % 縦軸の目盛を設定
-    yt = -6:1:0; % 縦軸の指数部
+    set(gca,'XTick', 0:14); % 縦軸の目盛を設定
+    yt = -13:1:-1; % 縦軸の指数部
     yt = 10.^yt; % 縦軸目盛りの数値
     set(gca,'YTick', yt); % 縦軸の目盛を設定
-    xlim([0 16]); % 表示する横軸の範囲
-    ylim([10^-6 10^-1]); % 表示する縦軸の範囲
+    xlim([0 14]); % 表示する横軸の範囲
+    ylim([10^-13 10^-1]); % 表示する縦軸の範囲
     xlabel('Eb/N0 [dB]'); % 横軸ラベル
     ylabel('BER'); % 縦軸ラベル
-    legend('実験値','理論値'); % 凡例
+    legend('actual values','theoretical values'); % 凡例
     grid on; % グリッドの表示
 
 end
@@ -135,6 +145,8 @@ function [ber, ser] = sim_QPSK(nDataBits, EbN0_dB)
     for n=1:nDataBits/k
         % 相関を求める
         for m=1:length(s)
+            reciveSymbol(n)
+            conj(s(m))
             c(m) = real( reciveSymbol(n) * conj(s(m)) ); % 複素共役を掛けることで相関を算出
         end
         [dummy_max, mr(n)] = max(c); % 最大値を求め送信されたシンボルmrを決定
