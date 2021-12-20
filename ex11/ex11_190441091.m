@@ -4,6 +4,7 @@ function ex11()
     clc;
     clear all;
     
+    % 1シンボル当たりのサンプル数
     sample_per_symbol = 4;
     
     % csvファイルの読み込み
@@ -11,16 +12,17 @@ function ex11()
 
     demodBit = zeros(1, length(m) / 4); % 受信ビット格納用の配列確保
     y = zeros(1, length(m) / 4 / 4); % 受信ビットの16進表現を格納用の配列確保
-    
-    % psi1 = sqrt(0.5 * 10.^6) * cos(0.5 * 10.^6 * pi * t)
-    
+       
     % mの1番目から4番目の値を取り出してr_tへ
     for n=1:length(m) / sample_per_symbol
+        
+        % 1シンボル(4サンプル)分の受信信号を代入
         r_t = m((n * 4) - 3:n * 4);
         
         % M値信号伝送ならば，Mを代入する
         s_num = 2;
         
+        % s0,s1は，位相変調信号の2次元ベクトル表現
         s0 = zeros(1, 2);
         
         s0(1, 1) = 1;
@@ -31,12 +33,11 @@ function ex11()
         s1(1, 1) = -1;
         s1(1, 2) = 0;
         
-        % s = [s0 s1];
-        
         r = zeros(1, 2);
         
         for k=1:length(r_t)
-            t = (n * 4 - 4 + k) * (10.^(-6))
+            % 時刻t
+            t = (n * 4 - 4 + k) * (10.^(-6));
             
             % キャリアを求める
             psi = [sqrt(0.5 * 10.^6) * cos(0.5 * 10.^6 * pi * t), -sqrt(0.5 * 10.^6) * sin(0.5 * 10.^6 * pi * t)];
@@ -52,8 +53,10 @@ function ex11()
         c(1) = r * s0';
         c(2) = r * s1';
         
-        [dummy_max, mr] = max(c); % 最大値を求め送信されたシンボルmrを決定
+        % 相関距離尺度の最大値を求め，送信されたシンボルmrを決定
+        [dummy_max, mr] = max(c);
         
+        % 復調
         if (mr == 1)
             demodBit(n) = 1;
         end
@@ -62,15 +65,20 @@ function ex11()
         end
     end
     
-    D = "0b";
+    binStr = "0b";
     
+    % 復調結果(2進数表現)を作成
     for n=1:length(m) / 4
-        D = append(D, num2str(demodBit(n)));
+        binStr = append(binStr, num2str(demodBit(n)));
     end
     
+    % 2進数の文字列を，10進数に変換
+    D = bin2dec(binStr);
+    
+    % 10進数を16進数に変換
     hexStr = dec2hex(D);
     
     % 結果の表示
-    % disp(['y = ' dec2hex(demodBit)]);
+    disp(['復調結果(16進数表示) : ' hexStr]);
     
     
